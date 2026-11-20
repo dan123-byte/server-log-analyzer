@@ -1,107 +1,633 @@
 import os
+from io import BytesIO
+from html import escape
+from datetime import datetime
 
-def generate_report(stats):
+import matplotlib
+matplotlib.use("Agg")
 
-    report = ""
+import matplotlib.pyplot as plt
 
-    report += "================================\n"
-    report += "       SERVER LOG ANALYZER\n"
-    report += "================================\n"
+from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    Table,
+    TableStyle,
+    Image,
+    PageBreak
+)
 
-    report += f"\nTotal Log Entries: {stats['total_logs']}\n"
+NAVY = colors.HexColor("#172554")
+BLUE = colors.HexColor("#2563EB")
+LIGHT_BLUE = colors.HexColor("#EFF6FF")
+LIGHT_GRAY = colors.HexColor("#F1F5F9")
+DARK_GRAY = colors.HexColor("#334155")
+WHITE = colors.white
 
-    report += "\nHTTP STATUS SUMMARY\n"
+styles = getSampleStyleSheet()
 
-    for code, total in stats["status_codes"].most_common():
-        report += f"{code} : {total}\n"
+styles.add(ParagraphStyle(
+    name="ReportTitle",
+    parent=styles["Title"],
+    fontSize=23,
+    textColor=NAVY,
+    alignment=TA_CENTER,
+    spaceAfter=5
+))
 
-    report += "\nHTTP METHOD SUMMARY\n"
+styles.add(ParagraphStyle(
+    name="Subtitle",
+    parent=styles["Normal"],
+    fontSize=9,
+    textColor=DARK_GRAY,
+    alignment=TA_CENTER,
+    spaceAfter=20
+))
 
-    for method, total in stats["methods"].most_common():
-        report += f"{method} : {total}\n"
+styles.add(ParagraphStyle(
+    name="SectionHeading",
+    parent=styles["Heading2"],
+    fontSize=13,
+    textColor=NAVY,
+    spaceBefore=12,
+    spaceAfter=8
+))
 
-    report += f"\nMost Used HTTP Method: {stats['most_used_method']}\n"
+styles.add(ParagraphStyle(
+    name="SmallText",
+    parent=styles["Normal"],
+    fontSize=8,
+    leading=11
+))
 
-    report += "\nERROR SUMMARY\n"
-    report += f"Client Errors (4xx): {stats['client_errors']}\n"
-    report += f"Server Errors (5xx): {stats['server_errors']}\n"
+styles.add(ParagraphStyle(
+    name="CardLabel",
+    parent=styles["Normal"],
+    fontSize=8,
+    textColor=NAVY,
+    alignment=TA_CENTER,
+    fontName="Helvetica-Bold"
+))
 
-    report += "\nFREQUENT ERRORS\n"
+styles.add(ParagraphStyle(
+    name="CardValue",
+    parent=styles["Normal"],
+    fontSize=15,
+    textColor=NAVY,
+    alignment=TA_CENTER,
+    fontName="Helvetica-Bold"
+))
 
-    for code, total in stats["status_codes"].most_common():
+def create_chart(labels, values, title, horizontal=False):
 
-        if code.startswith(("4", "5")):
-            report += f"{code} : {total}\n"
+    buffer = BytesIO()
 
-    report += "\nREQUEST SUCCESS AND ERROR RATES\n"
+    if not labels:
+        labels = ["No data"]
+        values = [0]
 
-    report += f"Successful Requests (2xx): {stats['success_percentage']:.2f}%\n"
-    report += f"Error Requests (4xx and 5xx): {stats['error_percentage']:.2f}%\n"
+    fig, ax = plt.subplots(figsize=(8, 3.2))
 
-    report += "\nTOP 5 REQUESTED ENDPOINTS\n"
+    if horizontal:
 
-    for endpoint, total in stats["endpoints"].most_common(5):
-        report += f"{endpoint} : {total} requests\n"
+        ax.barh(labels[::-1], values[::-1])
+        ax.set_xlabel("Requests")
+        ax.grid(axis="x", linestyle="--", alpha=0.3)
 
-    report += "\nTOP 5 ERROR ENDPOINTS\n"
+    else:
 
-    for endpoint, total in stats["error_endpoints"].most_common(5):
-        report += f"{endpoint} : {total} errors\n"
+        ax.bar(labels, values)
+        ax.set_ylabel("Requests")
+        ax.grid(axis="y", linestyle="--", alpha=0.3)
 
-    report += "\nTOP 5 CLIENT ERROR ENDPOINTS (4xx)\n"
+    ax.set_title(title, fontsize=13, fontweight="bold")
 
-    for endpoint, total in stats["client_error_endpoints"].most_common(5):
-        report += f"{endpoint} : {total} errors\n"
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
-    report += "\nTOP 5 SERVER ERROR ENDPOINTS (5xx)\n"
+    fig.tight_layout()
 
-    for endpoint, total in stats["server_error_endpoints"].most_common(5):
-        report += f"{endpoint} : {total} errors\n"
+    fig.savefig(
+        buffer,
+        format="png",
+        dpi=150,
+        bbox_inches="tight"
+    )
 
-    report += "\nTOP 5 ACTIVE IP ADDRESSES\n"
+    plt.close(fig)
 
-    for ip, total in stats["ip_addresses"].most_common(5):
-        report += f"{ip} : {total} requests\n"
+    buffer.seek(0)
 
-    report += f"\nUnique IP Addresses: {len(stats['unique_ips'])}\n"
+    return Image(
+        buffer,
+        width=165 * mm,
+        height=65 * mm
+    )
 
-    report += "\nREQUESTS PER HOUR\n"
 
-    for hour, total in stats["requests_per_hour"].most_common():
-        report += f"{hour} : {total} requests\n"
+def create_table(headers, rows, widths=None):
 
-    if stats["requests_per_hour"]:
+    table_data = []
 
-        busiest_hour, busiest_count = (
-            stats["requests_per_hour"].most_common(1)[0]
+    formatted_headers = [
+        Paragraph(
+            escape(str(header)),
+            styles["SmallText"]
         )
+        for header in headers
+    ]
 
-        report += f"\nBusiest Hour: {busiest_hour} ({busiest_count} requests)\n"
+    table_data.append(formatted_headers)
 
-    report += "\nRESPONSE SIZE STATISTICS\n"
+    for row in rows:
 
-    report += f"Average Response Size: {stats['average_response_size']:.2f} bytes\n"
-    report += f"Largest Response Size: {stats['largest_response']} bytes\n"
-    report += f"Largest Response Endpoint: {stats['largest_response_endpoint']}\n"
+        formatted_row = []
 
-    report += f"\nResponses With Recorded Sizes: {stats['response_count']}\n"
+        for cell in row:
 
-    report += "\n================================\n"
-    report += "       ANALYSIS COMPLETE\n"
-    report += "================================\n"
+            if isinstance(cell, Paragraph):
+                formatted_row.append(cell)
 
-    return report
+            else:
+                formatted_row.append(
+                    Paragraph(
+                        escape(str(cell)),
+                        styles["SmallText"]
+                    )
+                )
 
-def save_report(report, file_path):
+        table_data.append(formatted_row)
+
+    table = Table(
+        table_data,
+        colWidths=widths,
+        repeatRows=1
+    )
+
+    table.setStyle(TableStyle([
+
+        ("BACKGROUND", (0, 0), (-1, 0), NAVY),
+
+        ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
+
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+
+        ("LEADING", (0, 0), (-1, -1), 11),
+
+        ("GRID", (0, 0), (-1, -1), 0.4,
+         colors.HexColor("#CBD5E1")),
+
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+         [WHITE, LIGHT_GRAY]),
+
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+
+        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+
+    ]))
+
+    return table
+
+def create_summary_cards(stats):
+
+    cards = [
+
+        [
+            Paragraph("TOTAL LOGS", styles["CardLabel"]),
+            Paragraph(
+                str(stats["total_logs"]),
+                styles["CardValue"]
+            )
+        ],
+
+        [
+            Paragraph("UNIQUE IPs", styles["CardLabel"]),
+            Paragraph(
+                str(len(stats["unique_ips"])),
+                styles["CardValue"]
+            )
+        ],
+
+        [
+            Paragraph("SUCCESS RATE", styles["CardLabel"]),
+            Paragraph(
+                f'{stats["success_percentage"]:.2f}%',
+                styles["CardValue"]
+            )
+        ],
+
+        [
+            Paragraph("ERROR RATE", styles["CardLabel"]),
+            Paragraph(
+                f'{stats["error_percentage"]:.2f}%',
+                styles["CardValue"]
+            )
+        ]
+
+    ]
+
+    table = Table(
+        [cards],
+        colWidths=[42 * mm] * 4
+    )
+
+    table.setStyle(TableStyle([
+
+        ("BACKGROUND", (0, 0), (-1, -1), LIGHT_BLUE),
+
+        ("TEXTCOLOR", (0, 0), (-1, -1), NAVY),
+
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+
+        ("BOX", (0, 0), (-1, -1), 0.5, BLUE),
+
+        ("INNERGRID", (0, 0), (-1, -1), 0.5, BLUE),
+
+        ("TOPPADDING", (0, 0), (-1, -1), 10),
+
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 10),
+
+    ]))
+
+    return table
+
+def add_footer(canvas, document):
+
+    canvas.saveState()
+
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(DARK_GRAY)
+
+    canvas.drawString(
+        20 * mm,
+        12 * mm,
+        "SERVER LOG ANALYZER"
+    )
+
+    canvas.drawRightString(
+        190 * mm,
+        12 * mm,
+        f"Page {document.page}"
+    )
+
+    canvas.restoreState()
+
+def generate_report(stats, file_path="reports/server_analysis.pdf"):
 
     try:
 
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        os.makedirs(
+            os.path.dirname(file_path) or ".",
+            exist_ok=True
+        )
 
-        with open(file_path, "w") as file:
-            file.write(report)
+        document = SimpleDocTemplate(
+            file_path,
+            pagesize=A4,
+            rightMargin=20 * mm,
+            leftMargin=20 * mm,
+            topMargin=20 * mm,
+            bottomMargin=22 * mm
+        )
 
-        print(f"Report saved successfully to {file_path}")
+        elements = []
 
-    except OSError as error:
-        print("Error saving report:", error)
+        elements.append(Paragraph(
+            "SERVER LOG ANALYZER",
+            styles["ReportTitle"]
+        ))
+
+        elements.append(Paragraph(
+            f"Generated on {datetime.now().strftime('%B %d, %Y %I:%M %p')}",
+            styles["Subtitle"]
+        ))
+
+        elements.append(Paragraph(
+            "ANALYSIS OVERVIEW",
+            styles["SectionHeading"]
+        ))
+
+        elements.append(create_summary_cards(stats))
+
+        elements.append(Spacer(1, 15))
+
+        elements.append(Paragraph(
+            "HTTP STATUS SUMMARY",
+            styles["SectionHeading"]
+        ))
+
+        status_rows = [
+            [str(code), str(total)]
+            for code, total in stats["status_codes"].most_common()
+        ]
+
+        elements.append(create_table(
+            ["HTTP Status", "Total Requests"],
+            status_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        elements.append(Spacer(1, 10))
+
+        elements.append(create_chart(
+            [
+                str(code)
+                for code, total in stats["status_codes"].most_common()
+            ],
+            [
+                total
+                for code, total in stats["status_codes"].most_common()
+            ],
+            "HTTP Status Distribution"
+        ))
+
+        elements.append(Paragraph(
+            "HTTP METHOD SUMMARY",
+            styles["SectionHeading"]
+        ))
+
+        method_rows = [
+            [str(method), str(total)]
+            for method, total in stats["methods"].most_common()
+        ]
+
+        elements.append(create_table(
+            ["HTTP Method", "Total Requests"],
+            method_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        elements.append(Paragraph(
+            f'Most Used HTTP Method: {escape(str(stats["most_used_method"]))}',
+            styles["SmallText"]
+        ))
+
+        elements.append(PageBreak())
+
+        elements.append(Paragraph(
+            "ENDPOINT AND ERROR ANALYSIS",
+            styles["SectionHeading"]
+        ))
+
+        error_rows = [
+
+            ["Client Errors (4xx)", str(stats["client_errors"])],
+
+            ["Server Errors (5xx)", str(stats["server_errors"])]
+
+        ]
+
+        elements.append(create_table(
+            ["Error Category", "Total"],
+            error_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        elements.append(Spacer(1, 10))
+
+        elements.append(Paragraph(
+            "REQUEST SUCCESS AND ERROR RATES",
+            styles["SectionHeading"]
+        ))
+
+        rate_rows = [
+
+            [
+                "Successful Requests (2xx)",
+                f'{stats["success_percentage"]:.2f}%'
+            ],
+
+            [
+                "Error Requests (4xx and 5xx)",
+                f'{stats["error_percentage"]:.2f}%'
+            ]
+
+        ]
+
+        elements.append(create_table(
+            ["Request Category", "Percentage"],
+            rate_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        elements.append(Paragraph(
+            "TOP 5 REQUESTED ENDPOINTS",
+            styles["SectionHeading"]
+        ))
+
+        endpoint_rows = [
+            [str(endpoint), str(total)]
+            for endpoint, total in stats["endpoints"].most_common(5)
+        ]
+
+        elements.append(create_table(
+            ["Endpoint", "Requests"],
+            endpoint_rows,
+            [130 * mm, 35 * mm]
+        ))
+
+        elements.append(Spacer(1, 8))
+
+        elements.append(create_chart(
+            [
+                str(endpoint)
+                for endpoint, total in stats["endpoints"].most_common(5)
+            ],
+            [
+                total
+                for endpoint, total in stats["endpoints"].most_common(5)
+            ],
+            "Top 5 Requested Endpoints",
+            horizontal=True
+        ))
+
+        elements.append(Paragraph(
+            "TOP 5 ERROR ENDPOINTS",
+            styles["SectionHeading"]
+        ))
+
+        error_endpoint_rows = [
+            [str(endpoint), str(total)]
+            for endpoint, total in stats["error_endpoints"].most_common(5)
+        ]
+
+        elements.append(create_table(
+            ["Endpoint", "Errors"],
+            error_endpoint_rows,
+            [130 * mm, 35 * mm]
+        ))
+
+        elements.append(Paragraph(
+            "TOP 5 CLIENT ERROR ENDPOINTS (4xx)",
+            styles["SectionHeading"]
+        ))
+
+        client_rows = [
+            [str(endpoint), str(total)]
+            for endpoint, total in stats["client_error_endpoints"].most_common(5)
+        ]
+
+        elements.append(create_table(
+            ["Endpoint", "Errors"],
+            client_rows,
+            [130 * mm, 35 * mm]
+        ))
+
+        elements.append(Paragraph(
+            "TOP 5 SERVER ERROR ENDPOINTS (5xx)",
+            styles["SectionHeading"]
+        ))
+
+        server_rows = [
+            [str(endpoint), str(total)]
+            for endpoint, total in stats["server_error_endpoints"].most_common(5)
+        ]
+
+        elements.append(create_table(
+            ["Endpoint", "Errors"],
+            server_rows,
+            [130 * mm, 35 * mm]
+        ))
+
+        elements.append(PageBreak())
+
+        elements.append(Paragraph(
+            "TRAFFIC AND RESPONSE ANALYSIS",
+            styles["SectionHeading"]
+        ))
+
+        elements.append(Paragraph(
+            "TOP 5 ACTIVE IP ADDRESSES",
+            styles["SectionHeading"]
+        ))
+
+        ip_rows = [
+            [str(ip), str(total)]
+            for ip, total in stats["ip_addresses"].most_common(5)
+        ]
+
+        elements.append(create_table(
+            ["IP Address", "Requests"],
+            ip_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        elements.append(Paragraph(
+            f'Unique IP Addresses: {len(stats["unique_ips"])}',
+            styles["SmallText"]
+        ))
+
+        elements.append(Paragraph(
+            "REQUESTS PER HOUR",
+            styles["SectionHeading"]
+        ))
+
+        hourly_data = sorted(
+            stats["requests_per_hour"].items()
+        )
+
+        hourly_rows = [
+            [str(hour), str(total)]
+            for hour, total in hourly_data
+        ]
+
+        elements.append(create_table(
+            ["Hour", "Requests"],
+            hourly_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        if hourly_data:
+
+            busiest_hour, busiest_count = max(
+                hourly_data,
+                key=lambda item: item[1]
+            )
+
+            elements.append(Paragraph(
+                f"Busiest Hour: {escape(str(busiest_hour))} "
+                f"({busiest_count} requests)",
+                styles["SmallText"]
+            ))
+
+        elements.append(Spacer(1, 10))
+
+        elements.append(create_chart(
+            [
+                str(hour)
+                for hour, total in hourly_data
+            ],
+            [
+                total
+                for hour, total in hourly_data
+            ],
+            "Requests Per Hour"
+        ))
+
+        elements.append(Paragraph(
+            "RESPONSE SIZE STATISTICS",
+            styles["SectionHeading"]
+        ))
+
+        response_rows = [
+
+            [
+                "Average Response Size",
+                f'{stats["average_response_size"]:.2f} bytes'
+            ],
+
+            [
+                "Largest Response Size",
+                f'{stats["largest_response"]} bytes'
+            ],
+
+            [
+                "Largest Response Endpoint",
+                str(stats["largest_response_endpoint"])
+            ],
+
+            [
+                "Responses With Recorded Sizes",
+                str(stats["response_count"])
+            ]
+
+        ]
+
+        elements.append(create_table(
+            ["Metric", "Value"],
+            response_rows,
+            [80 * mm, 85 * mm]
+        ))
+
+        document.build(
+            elements,
+            onFirstPage=add_footer,
+            onLaterPages=add_footer
+        )
+
+        print(
+            f"PDF report generated successfully: {file_path}"
+        )
+
+    except (OSError, ValueError, KeyError, TypeError) as error:
+
+        print(
+            "Error generating PDF report:",
+            error
+        )
