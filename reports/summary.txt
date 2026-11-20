@@ -1,0 +1,83 @@
+================================
+       SERVER LOG ANALYZER
+================================
+
+Total Log Entries: 601
+
+HTTP STATUS SUMMARY
+200 : 288
+301 : 82
+500 : 81
+304 : 80
+404 : 70
+
+HTTP METHOD SUMMARY
+GET : 601
+
+Most Used HTTP Method: GET
+
+ERROR SUMMARY
+Client Errors (4xx): 70
+Server Errors (5xx): 81
+
+FREQUENT ERRORS
+500 : 81
+404 : 70
+
+REQUEST SUCCESS AND ERROR RATES
+Successful Requests (2xx): 47.92%
+Error Requests (4xx and 5xx): 25.12%
+
+TOP 5 REQUESTED ENDPOINTS
+/api/health : 70 requests
+/services/ai-agent-development : 66 requests
+/samples/images/jpg/sample-image-640x480-100kb.jpg : 61 requests
+/contact : 61 requests
+/sample-files : 61 requests
+
+TOP 5 ERROR ENDPOINTS
+/contact : 20 errors
+/services/ai-agent-development : 20 errors
+/api/health : 19 errors
+/samples/images/jpg/sample-image-640x480-100kb.jpg : 17 errors
+/sample-files : 15 errors
+
+TOP 5 CLIENT ERROR ENDPOINTS (4xx)
+/services/ai-agent-development : 11 errors
+/blog : 9 errors
+/favicon.ico : 8 errors
+/contact : 8 errors
+/sample-files : 7 errors
+
+TOP 5 SERVER ERROR ENDPOINTS (5xx)
+/api/health : 12 errors
+/contact : 12 errors
+/samples/images/jpg/sample-image-640x480-100kb.jpg : 10 errors
+/services/ai-agent-development : 9 errors
+/tools/image-converter : 8 errors
+
+TOP 5 ACTIVE IP ADDRESSES
+104.242.33.156 : 1 requests
+59.240.243.102 : 1 requests
+199.7.32.41 : 1 requests
+131.198.218.102 : 1 requests
+19.69.253.56 : 1 requests
+
+Unique IP Addresses: 601
+
+REQUESTS PER HOUR
+00:00 : 352 requests
+01:00 : 249 requests
+
+Busiest Hour: 00:00 (352 requests)
+
+RESPONSE SIZE STATISTICS
+Average Response Size: 45194.43 bytes
+Largest Response Size: 91951 bytes
+Largest Response Endpoint: /contact
+
+Responses With Recorded Sizes: 601
+
+================================
+       ANALYSIS COMPLETE
+================================
