@@ -1,0 +1,241 @@
+.stApp,
+[data-testid="stAppViewContainer"] {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+.main .block-container {
+    max-width: 1100px;
+    padding: 3.5rem 3rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #f8fafc !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.5px;
+}
+
+h1 {
+    font-size: 2.5rem !important;
+    font-weight: 750 !important;
+    color: #ffffff !important;
+    letter-spacing: -1px;
+}
+
+p, span, label, li {
+    color: #e2e8f0;
+}
+
+[data-testid="stCaptionContainer"] {
+    color: #94a3b8 !important;
+    font-size: 0.95rem;
+}
+
+[data-testid="stHeader"] {
+    background: #0f172a !important;
+}
+
+[data-testid="stToolbar"] {
+    background: transparent !important;
+}
+
+[data-testid="stDecoration"] {
+    background: #0f172a !important;
+}
+
+hr {
+    border-color: #293952 !important;
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+[data-testid="stFileUploader"] {
+    background: #1e293b !important;
+    border: 1px dashed #475569;
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color 0.2s ease,
+                background 0.2s ease;
+}
+
+[data-testid="stFileUploader"]:hover {
+    border-color: #3b82f6;
+    background: #23334c !important;
+}
+
+[data-testid="stFileUploader"] section {
+    background: transparent !important;
+}
+
+[data-testid="stFileUploader"] section > div {
+    color: #f8fafc !important;
+}
+
+[data-testid="stFileUploader"] label {
+    color: #f8fafc !important;
+    font-weight: 600;
+}
+
+[data-testid="stFileUploader"] small {
+    color: #94a3b8 !important;
+}
+
+[data-testid="stFileUploader"] button {
+    background: #334155 !important;
+    color: #ffffff !important;
+    border: 1px solid #475569;
+    border-radius: 7px;
+    transition: all 0.2s ease;
+}
+
+[data-testid="stFileUploader"] button:hover {
+    background: #475569 !important;
+    border-color: #60a5fa;
+}
+
+[data-testid="stSelectbox"] label {
+    color: #e2e8f0 !important;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    background: #1e293b !important;
+    border: 1px solid #475569;
+    border-radius: 9px;
+    min-height: 45px;
+}
+
+[data-testid="stSelectbox"] div[data-baseweb="select"] span {
+    color: #ffffff !important;
+}
+
+[data-baseweb="popover"],
+[data-baseweb="menu"] {
+    background: #1e293b !important;
+    color: #f8fafc !important;
+}
+
+[data-baseweb="menu"] li {
+    color: #f8fafc !important;
+}
+
+[data-baseweb="menu"] li:hover {
+    background: #334155 !important;
+}
+
+.stButton button {
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #1d4ed8
+    ) !important;
+
+    color: #ffffff !important;
+    border: 1px solid #3b82f6;
+    border-radius: 10px;
+
+    min-height: 50px;
+    padding: 0.75rem 1.5rem;
+
+    font-size: 1rem;
+    font-weight: 650;
+
+    transition: all 0.2s ease;
+}
+
+.stButton button p,
+.stButton button span {
+    color: #ffffff !important;
+}
+
+.stButton button:hover {
+    background: linear-gradient(
+        135deg,
+        #3b82f6,
+        #2563eb
+    ) !important;
+
+    border-color: #60a5fa;
+    color: #ffffff !important;
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 5px 18px rgba(37, 99, 235, 0.25);
+}
+
+.stButton button:active {
+    transform: translateY(0);
+}
+
+.stButton button:focus {
+    color: #ffffff !important;
+    box-shadow: 0 0 0 2px #0f172a,
+                0 0 0 4px #60a5fa !important;
+}
+
+[data-testid="stAlert"] {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 10px !important;
+}
+
+[data-testid="stAlert"] p,
+[data-testid="stAlert"] span,
+[data-testid="stAlert"] div {
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+}
+
+[data-testid="stAlert"] > div {
+    background: transparent !important;
+}
+
+[data-testid="stAlert"] svg {
+    color: #60a5fa !important;
+}
+
+[data-testid="stSpinner"] p {
+    color: #f8fafc !important;
+    font-size: 0.95rem;
+}
+
+[data-testid="stTooltipContent"] {
+    background: #1e293b !important;
+    border: 1px solid #475569 !important;
+    border-radius: 8px !important;
+    color: #f8fafc !important;
+}
+
+[data-testid="stTooltipContent"] * {
+    color: #f8fafc !important;
+}
+
+footer {
+    visibility: hidden;
+}
+
+#MainMenu {
+    visibility: hidden;
+}
+
+@media screen and (max-width: 768px) {
+
+    .main .block-container {
+        padding: 2rem 1rem;
+    }
+
+    h1 {
+        font-size: 1.9rem !important;
+    }
+
+    [data-testid="stFileUploader"] {
+        padding: 12px;
+    }
+
+    .stButton button {
+        min-height: 48px;
+        font-size: 0.95rem;
+    }
+}
